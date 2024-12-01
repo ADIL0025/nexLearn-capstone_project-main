@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int       @id @default(autoincrement())
+  name     String?
+  email    String    @unique
+  password String
+  goal     Goal      @default(PLACEMENT)
+  courses  UserCourse[]
+  scores   UserScore[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+  lastViewedCourse   Course?   @relation("LastViewed", fields: [lastViewedCourseId], references: [id])
+  lastViewedCourseId Int? 
+}
+
+model Course {
+  id             Int          @id @default(autoincrement())
+  title          String
+  description    String?
+  type           CourseType
+  goal           Goal
+  modules        Module[]
+  lastViewedAt   DateTime?
+  userCourses    UserCourse[]  // Add this field to establish the reverse relation
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  correctAnswers Int          @default(0)
+  User User[] @relation("LastViewed")
+}
+
+model Module {
+  id          Int           @id @default(autoincrement())
+  title       String
+  type        MaterialType  @default(READING)
+  content     Content?
+  videoUrl    String?
+  completed   Boolean       @default(false)
+  courseId    Int
+  assessments Assessment[]
+  Course      Course        @relation(fields: [courseId], references: [id])
+}
+
+model Content {
+  id           Int           @id @default(autoincrement())
+  heading      String
+  subhead1     String
+  subhead2     String?
+  paragraph1   String
+  paragraph2   String?
+  moduleId     Int           @unique
+  Module       Module        @relation(fields: [moduleId], references: [id])
+}
+
+model Assessment {
+  id          Int            @id @default(autoincrement())
+  type        AssessmentType
+  level       Level
+  question    String
+  options     String[] 
+  correctAnswer String 
+  correctAnswersCount Int    @default(0)
+  moduleId    Int
+  Module      Module         @relation(fields: [moduleId], references: [id])
+}
+
+model UserCourse {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  courseId     Int
+  lastViewedAt DateTime?
+  User         User     @relation(fields: [userId], references: [id])
+  Course       Course   @relation(fields: [courseId], references: [id])
+}
+
+model UserScore {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  courseType  CourseType
+  score       Int
+  User        User      @relation(fields: [userId], references: [id])
+}
+
+enum Goal {
+  INTERNSHIP
+  PLACEMENT
+}
+
+enum CourseType {
+  CODING
+  APTITUDE
+  LANGUAGE
+}
+
+enum AssessmentType {
+  CODING
+  MCQ
+}
+
+
+enum Level {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum MaterialType {
+  READING
+  VIDEO
+}
